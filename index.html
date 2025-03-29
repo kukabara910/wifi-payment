@@ -176,13 +176,18 @@
             "solana": "86dWGLeb5GuV46tQcDu5cLN3BJvVCJYrP7hnf8ekmVvK"
         };
 
-        function loadPlans() {
-            plans = [
-                { name: "1 Hour Plan", price: 10, duration: "1 Hour" },
-                { name: "3 Hour Plan", price: 25, duration: "3 Hours" },
-                { name: "24 Hour Plan", price: 100, duration: "24 Hours" }
-            ];
-            renderPlans();
+               function loadPlans() {
+            fetch('wifi_plans.json')
+                .then(response => response.json())
+                .then(data => {
+                    plans = data.plans || [];
+                    renderPlans();
+                })
+                .catch(error => {
+                    console.error("Failed to load plans:", error);
+                    document.getElementById("plans").innerHTML = "<p>Error                   
+                     loading plans.</p>";
+            
         }
 
         function renderPlans() {
