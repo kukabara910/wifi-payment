@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 const PORT = 3000;
 
@@ -19,6 +20,17 @@ app.use((req, res, next) => {
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve plans dynamically from plans.json
+app.get('/api/plans', (req, res) => {
+    fs.readFile('plans.json', 'utf8', (err, data) => {
+        if (err) {
+            console.error("Error reading plans.json:", err);
+            return res.status(500).json({ error: 'Failed to load plans' });
+        }
+        res.json(JSON.parse(data));
+    });
+});
+
 app.post('/api/check-payment', async (req, res) => {
     const { token, expectedTokenAmount } = req.body;
     console.log('Received payment check request:', req.body);
@@ -37,7 +49,7 @@ app.post('/api/check-payment', async (req, res) => {
         const url = `https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${tokenAddress}&address=${YOUR_WALLET_ADDRESS}&page=1&offset=10&sort=desc&apikey=${ETHERSCAN_API_KEY}`;
         const response = await fetch(url);
         const data = await response.json();
-        console.log("Etherscan data:", data); // ← Debug output
+        console.log("Etherscan data:", data);
 
         const matched = data.result.find(tx => {
             const amount = Number(tx.value) / (10 ** tx.tokenDecimal);
@@ -56,14 +68,13 @@ app.post('/api/check-payment', async (req, res) => {
         });
 
         if (matched) {
-            return res.json({ success: true, tx: matched.hash });
+            res.json({ success: true, message: 'Payment verified', txHash: matched.hash });
         } else {
-            return res.json({ success: false, message: 'No matching transaction yet' });
+            res.json({ success: false, message: 'Payment not found yet' });
         }
-
-    } catch (err) {
-        console.error('Error checking Etherscan:', err);
-        res.status(500).json({ success: false, error: 'Server error' });
+    } catch (error) {
+        console.error('Error checking payment:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
 
